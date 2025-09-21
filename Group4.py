@@ -5,12 +5,35 @@ import pandas as pd
 import sys
 from threading import Thread
 from queue import Queue
+from pathlib import Path
 
 sys.path.append('./sort')
 from sort import Sort
 
 # 載入你訓練好的 YOLO 模型
-model = torch.hub.load('ultralytics/yolov5', 'custom', path='C:/AutoTraffic-Analyzer/yolov5/runs/train/exp4/weights/best.pt', force_reload=True)
+ROOT = Path(__file__).resolve().parent
+WEIGHTS_PATH = ROOT / "weight" / "best.pt"            
+
+OUTPUT_DIR   = ROOT / "output"
+OUTPUT_DIR.mkdir(exist_ok=True)                        
+OUTPUT_PATH  = OUTPUT_DIR / "output.avi"
+
+# 讓 Python 找得到 sort 模組
+sys.path.append(str(ROOT / "sort"))
+from sort import Sort
+
+# -----------------------------
+# 載入訓練好的 YOLO 模型（torch.hub）
+# -----------------------------
+if not WEIGHTS_PATH.exists():
+    raise FileNotFoundError(f"weights not found: {WEIGHTS_PATH}")
+
+model = torch.hub.load(
+    'ultralytics/yolov5',
+    'custom',
+    path=str(WEIGHTS_PATH),
+    force_reload=True
+)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model.to(device)
 
@@ -146,7 +169,7 @@ def display_frame(output_queue, line_coordinates, out):
             break
 
 # 讀取影片
-video_path = 'C:/AutoTraffic-Analyzer/highway_slowmotion.mp4'
+video_path   = ROOT / "videos" / "highway_slowmotion.mp4"  
 cap = cv2.VideoCapture(video_path)
 
 # 確保影片成功打開
